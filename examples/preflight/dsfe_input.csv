@@ -1,0 +1,4 @@
+member_id,measure_id,screening_date,screening_tool,screening_score,screening_loinc,follow_up_code,follow_up_date,bipolar_history,prior_year_depression_dx,source_kind
+1001,DSF-E,2025-01-15,PHQ-9,12,44261-6,96127,2025-01-30,0,0,structured
+1002,DSF-E,2025-06-30,PHQ-2,2,44249-1,,,0,0,structured
+1003,DSF-E,2025-07-04,PHQ-2,4,99999-9,,2025-08-20,1,0,free_text

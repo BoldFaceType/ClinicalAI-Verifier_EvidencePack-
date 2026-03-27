@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clinica-ai-engineering"
+version = "0.1.0"
+description = "V1 data processing tools for pre-flight validation and denial evidence packing."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "OpenAI Codex" }
+]
+dependencies = [
+  "instructor>=1.14.5",
+  "pydantic>=2.7,<3",
+]
+
+[project.optional-dependencies]
+parquet = [
+  "pyarrow>=15,<18"
+]
+
+[dependency-groups]
+dev = [
+  "ruff>=0.11,<0.12"
+]
+
+[project.scripts]
+preflight-validator = "preflight_validator.cli:main"
+validate-dsfe = "preflight_validator.cli:main"
+evidence-packer = "evidence_packer.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [
+  ".venv",
+  ".uv-cache",
+  "__pycache__",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+ignore = ["E501"]

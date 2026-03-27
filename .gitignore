@@ -1,0 +1,11 @@
+.venv/
+.uv-cache/
+.ruff_cache/
+.test_runs/
+.tmp/
+.demo_out/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/

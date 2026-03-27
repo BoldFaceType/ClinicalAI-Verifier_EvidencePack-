@@ -1,0 +1,26 @@
+{
+  "resourceType": "ClaimResponse",
+  "id": "CR-100",
+  "outcome": "error",
+  "disposition": "Authorization missing for imaging request.",
+  "request": {
+    "reference": "Claim/CLM-100"
+  },
+  "item": [
+    {
+      "adjudication": [
+        {
+          "reason": {
+            "coding": [
+              {
+                "code": "AUTH-001",
+                "display": "Missing authorization"
+              }
+            ],
+            "text": "Missing authorization"
+          }
+        }
+      ]
+    }
+  ]
+}

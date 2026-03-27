@@ -1,0 +1,2 @@
+The patient completed a prior authorization review and the request was denied for lack of authorization.
+The chart notes indicate the service remained medically necessary but approval was not obtained.

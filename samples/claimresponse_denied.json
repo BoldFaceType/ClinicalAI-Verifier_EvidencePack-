@@ -1,0 +1,24 @@
+{
+  "resourceType": "ClaimResponse",
+  "id": "claimresponse-denied-001",
+  "outcome": "error",
+  "disposition": "Prior authorization missing for the requested service",
+  "item": [
+    {
+      "adjudication": [
+        {
+          "reason": {
+            "coding": [
+              {
+                "system": "https://example.org/denial-codes",
+                "code": "AUTH-001",
+                "display": "Prior authorization missing"
+              }
+            ],
+            "text": "Prior authorization missing"
+          }
+        }
+      ]
+    }
+  ]
+}
