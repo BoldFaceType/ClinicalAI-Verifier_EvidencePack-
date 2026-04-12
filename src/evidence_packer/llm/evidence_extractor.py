@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import warnings
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -120,6 +121,12 @@ def _build_instructor_client() -> SupportsResponses | None:
         import instructor
         from openai import OpenAI
     except ImportError:
+        warnings.warn(
+            "AI evidence extraction is enabled but optional dependencies ('instructor' and 'openai') "
+            "are not available; falling back to heuristic extraction.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
         return None
     return InstructorClientAdapter(client=instructor.from_openai(OpenAI()))
 
