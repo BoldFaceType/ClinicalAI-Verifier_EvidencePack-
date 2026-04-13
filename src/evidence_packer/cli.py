@@ -33,7 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
             "  Guided walkthrough:\n"
             "    evidence-packer --wizard\n\n"
             "  Quick path with heuristic extraction:\n"
-            "    evidence-packer .\\samples\\claimresponse_denied.json .\\samples\\clinical_notes .\\out\\evidence\n\n"
+            "    evidence-packer samples/claimresponse_denied.json samples/clinical_notes out/evidence\n\n"
             "  AI-assisted extraction with Instructor:\n"
             "    evidence-packer claim.json notes out --use-ai\n\n"
             "Troubleshooting:\n"
@@ -60,7 +60,7 @@ def build_parser() -> argparse.ArgumentParser:
         "output_dir",
         nargs="?",
         type=Path,
-        help="Directory where the packet JSON, summary, and PDF placeholder will be written.",
+        help="Directory where the packet JSON, summary, and PDF will be written.",
     )
     parser.add_argument(
         "-w",
@@ -159,10 +159,10 @@ def _collect_cli_config(
         prompt_text("ClaimResponse JSON path", default=str(claim_response_json or ""))
     )
     chosen_notes = Path(
-        prompt_text("Clinical notes directory", default=str(notes_dir or "samples\\clinical_notes"))
+        prompt_text("Clinical notes directory", default=str(notes_dir or "samples/clinical_notes"))
     )
     chosen_output = Path(
-        prompt_text("Output directory", default=str(output_dir or "out\\evidence"))
+        prompt_text("Output directory", default=str(output_dir or "out/evidence"))
     )
     ai_choice = prompt_choice(
         "Extraction mode.",

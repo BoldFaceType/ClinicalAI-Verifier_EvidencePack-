@@ -52,12 +52,12 @@ Output files:
 
 Reference:
 
-- [DSF-E Rule Catalog](C:\Dev\projects\Clinica AI Engineering\docs\rule_catalog.md)
+- [DSF-E Rule Catalog](docs/rule_catalog.md)
 
 Example:
 
-```powershell
-validate-dsfe .\examples\preflight\dsfe_input.csv .\out\preflight
+```sh
+validate-dsfe examples/preflight/dsfe_input.csv out/preflight
 ```
 
 ## Evidence Packer
@@ -77,33 +77,32 @@ Output files:
 
 Reference:
 
-- [Evidence Strategy Catalog](C:\Dev\projects\Clinica AI Engineering\docs\evidence_strategy_catalog.md)
+- [Evidence Strategy Catalog](docs/evidence_strategy_catalog.md)
 
 Example:
 
-```powershell
-evidence-packer .\examples\evidence\claimresponse_denied.json .\examples\evidence\clinical_notes .\out\evidence
+```sh
+evidence-packer examples/evidence/claimresponse_denied.json examples/evidence/clinical_notes out/evidence
 ```
 
 ## Installation Notes
 
 Base dependency:
 
-```powershell
+```sh
 pip install .
 ```
 
 With optional Parquet support:
 
-```powershell
+```sh
 pip install .[parquet]
 ```
 
 ## Running Tests
 
-```powershell
+```sh
 python -m unittest discover -s tests
 ```
 
 The tests prepend `src` to `sys.path`, so they can run without installing the package first.
-The current shell does not expose Python on `PATH`, so test execution may require activating your local interpreter first.
