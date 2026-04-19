@@ -34,9 +34,9 @@ def build_parser() -> argparse.ArgumentParser:
             "  Guided walkthrough:\n"
             "    validate_dsfe --wizard\n\n"
             "  Quick path for experienced users:\n"
-            "    validate_dsfe .\\input\\dsfe.csv .\\out\\preflight\n\n"
+            "    validate_dsfe ./input/dsfe.csv ./out/preflight\n\n"
             "  Disable ANSI color if your terminal does not render colors cleanly:\n"
-            "    validate_dsfe .\\input\\dsfe.ndjson .\\out\\preflight --no-color\n\n"
+            "    validate_dsfe ./input/dsfe.ndjson ./out/preflight --no-color\n\n"
             "Troubleshooting:\n"
             "  - If you see 'Input file does not exist', double-check the path and filename.\n"
             "  - If you see 'missing required columns/fields', compare your file to the DSF-E schema.\n"
@@ -176,7 +176,7 @@ def _collect_cli_config(
     )
     chosen_input = Path(prompt_text("Input file path", default=str(input_file or "")))
     chosen_output = Path(
-        prompt_text("Output directory", default=str(output_dir or "out\\preflight"))
+        prompt_text("Output directory", default=str(output_dir or "out/preflight"))
     )
     print()
     print_kv(palette, "Input", str(chosen_input))

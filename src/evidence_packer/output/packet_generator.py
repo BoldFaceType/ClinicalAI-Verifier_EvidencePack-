@@ -72,6 +72,7 @@ def _write_reportlab_pdf(path: Path, *, title: str, lines: list[str]) -> bool:
     except ImportError:
         return False
 
+    # invariant=1 disables variable metadata so generated PDFs remain deterministic across runs.
     pdf = canvas.Canvas(str(path), pagesize=letter, pageCompression=0, invariant=1)
     width, height = letter
     y = height - 72
