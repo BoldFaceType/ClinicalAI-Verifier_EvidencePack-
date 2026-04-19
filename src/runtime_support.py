@@ -37,6 +37,7 @@ def load_runtime_settings(
     profile: str | None = None,
     correlation_id: str | None = None,
 ) -> RuntimeSettings:
+    """Load runtime settings with explicit args taking precedence over environment variables."""
     chosen_profile = profile or os.getenv("CLINICALAI_PROFILE", "local")
     chosen_correlation_id = correlation_id or os.getenv("CLINICALAI_CORRELATION_ID") or str(uuid4())
     log_level = os.getenv("CLINICALAI_LOG_LEVEL", "INFO").upper()
@@ -58,6 +59,7 @@ def emit_structured_log(
     event: str,
     payload: dict[str, Any] | None = None,
 ) -> None:
+    """Emit a JSON log line to stderr with optional recursive redaction applied."""
     body = {
         "timestamp": datetime.now(UTC).isoformat(),
         "tool": settings.tool,
@@ -73,6 +75,7 @@ def emit_structured_log(
 
 
 def append_audit_event(path: Path | None, event: dict[str, object]) -> None:
+    """Append an audit event as JSONL and inject a UTC timestamp on write."""
     if path is None:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -82,6 +85,7 @@ def append_audit_event(path: Path | None, event: dict[str, object]) -> None:
 
 
 def classify_error(tool: str, exc: Exception) -> AppError:
+    """Map exceptions into stable tool-scoped error codes for machine-readable handling."""
     message = str(exc)
     if isinstance(exc, AppError):
         return exc

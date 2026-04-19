@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from evidence_packer.models.fhir_models import ClaimResponseModel, DenialDecision
+from evidence_packer.models.fhir_models import ClaimResponseModel, DenialDecision, DenialReason
 
 
 def parse_denial_reason(model: ClaimResponseModel) -> DenialDecision:
@@ -19,7 +19,7 @@ def parse_denial_reason(model: ClaimResponseModel) -> DenialDecision:
     )
 
 
-def _select_primary_reason(model: ClaimResponseModel):
+def _select_primary_reason(model: ClaimResponseModel) -> DenialReason | None:
     if not model.reasons:
         return None
     return max(model.reasons, key=lambda reason: _score_reason(f"{reason.code} {reason.text}"))

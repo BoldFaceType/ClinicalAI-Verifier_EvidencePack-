@@ -6,6 +6,9 @@ from pathlib import Path
 from evidence_packer.models.fhir_models import EvidenceExcerpt
 from evidence_packer.strategy.evidence_mapper import EvidencePlan
 
+# Fits a Letter page at 11pt Helvetica with left/right margins while avoiding overflow clipping.
+MAX_PDF_LINE_LENGTH = 140
+
 
 def generate_appeal_packet(
     *,
@@ -85,7 +88,7 @@ def _write_reportlab_pdf(path: Path, *, title: str, lines: list[str]) -> bool:
             pdf.showPage()
             y = height - 72
             pdf.setFont("Helvetica", 11)
-        pdf.drawString(72, y, line[:140])
+        pdf.drawString(72, y, line[:MAX_PDF_LINE_LENGTH])
         y -= 16
     pdf.save()
     return True
