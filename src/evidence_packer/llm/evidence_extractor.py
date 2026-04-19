@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import os
-import warnings
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+import instructor
+from openai import OpenAI
 from pydantic import BaseModel, Field
 
 from evidence_packer.models.fhir_models import ClinicalNote, EvidenceExcerpt
@@ -116,17 +117,6 @@ def _extract_with_instructor(
 
 def _build_instructor_client() -> SupportsResponses | None:
     if not os.getenv("OPENAI_API_KEY"):
-        return None
-    try:
-        import instructor
-        from openai import OpenAI
-    except ImportError:
-        warnings.warn(
-            "AI evidence extraction is enabled but optional dependencies ('instructor' and 'openai') "
-            "are not available; falling back to heuristic extraction.",
-            RuntimeWarning,
-            stacklevel=2,
-        )
         return None
     return InstructorClientAdapter(client=instructor.from_openai(OpenAI()))
 
