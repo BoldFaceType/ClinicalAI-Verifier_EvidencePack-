@@ -15,6 +15,7 @@ from cli_common import (
     prompt_text,
 )
 from preflight_validator.pipeline import run_validation
+from runtime_support import classify_error, emit_structured_log, load_runtime_settings
 
 ParserConfig = dict[str, Path]
 
@@ -67,12 +68,27 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Disable ANSI colors and highlighting in terminal output.",
     )
+    parser.add_argument(
+        "--profile",
+        default=None,
+        help="Runtime profile (defaults to CLINICALAI_PROFILE or local).",
+    )
+    parser.add_argument(
+        "--correlation-id",
+        default=None,
+        help="Correlation ID for logs and audit records.",
+    )
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(list(argv) if argv is not None else None)
     palette = Palette(enabled=not args.no_color)
+    settings = load_runtime_settings(
+        tool="preflight_validator",
+        profile=args.profile,
+        correlation_id=args.correlation_id,
+    )
     config = _collect_cli_config(
         wizard=args.wizard or not (args.input_file and args.output_dir),
         input_file=args.input_file,
@@ -82,17 +98,32 @@ def main(argv: Sequence[str] | None = None) -> int:
     if config is None:
         print(
             json.dumps(
-                {"status": "cancelled", "message": "Validation cancelled by user."}, indent=2
+                {
+                    "status": "cancelled",
+                    "message": "Validation cancelled by user.",
+                    "correlation_id": settings.correlation_id,
+                },
+                indent=2,
             )
         )
         return 2
 
+    emit_structured_log(settings, level="info", event="preflight.validation.start", payload=config)
     try:
-        summary = run_validation(config["input_file"], config["output_dir"])
+        summary = run_validation(
+            config["input_file"],
+            config["output_dir"],
+            correlation_id=settings.correlation_id,
+            profile=settings.profile,
+            audit_log_path=settings.audit_log_path,
+        )
     except (OSError, ValueError) as exc:
+        app_error = classify_error("preflight", exc)
         payload = build_error_payload(
             tool="preflight_validator",
-            exc=exc,
+            exc=app_error,
+            error_code=app_error.code,
+            correlation_id=settings.correlation_id,
             inputs=config,
             hints=[
                 "Confirm that the input file exists and is readable.",
@@ -102,10 +133,26 @@ def main(argv: Sequence[str] | None = None) -> int:
             ],
         )
         print(palette.error("Validation could not start."))
-        print(palette.warning(str(exc)))
+        print(palette.warning(str(app_error)))
         print(json.dumps(payload, indent=2))
+        emit_structured_log(
+            settings,
+            level="error",
+            event="preflight.validation.failed",
+            payload={"error_code": app_error.code, "message": str(app_error)},
+        )
         return 2
     _print_human_summary(summary, palette)
+    emit_structured_log(
+        settings,
+        level="info",
+        event="preflight.validation.completed",
+        payload={
+            "status": "ok" if not summary["error_count"] else "issues_found",
+            "error_count": summary["error_count"],
+            "warning_count": summary["warning_count"],
+        },
+    )
     print(json.dumps(summary, indent=2))
     return 1 if summary["error_count"] else 0
 

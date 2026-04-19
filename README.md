@@ -52,12 +52,12 @@ Output files:
 
 Reference:
 
-- [DSF-E Rule Catalog](C:\Dev\projects\Clinica AI Engineering\docs\rule_catalog.md)
+- [DSF-E Rule Catalog](docs/rule_catalog.md)
 
 Example:
 
-```powershell
-validate-dsfe .\examples\preflight\dsfe_input.csv .\out\preflight
+```bash
+validate-dsfe ./examples/preflight/dsfe_input.csv ./out/preflight
 ```
 
 ## Evidence Packer
@@ -77,33 +77,46 @@ Output files:
 
 Reference:
 
-- [Evidence Strategy Catalog](C:\Dev\projects\Clinica AI Engineering\docs\evidence_strategy_catalog.md)
+- [Evidence Strategy Catalog](docs/evidence_strategy_catalog.md)
 
 Example:
 
-```powershell
-evidence-packer .\examples\evidence\claimresponse_denied.json .\examples\evidence\clinical_notes .\out\evidence
+```bash
+evidence-packer ./examples/evidence/claimresponse_denied.json ./examples/evidence/clinical_notes ./out/evidence
 ```
 
 ## Installation Notes
 
 Base dependency:
 
-```powershell
+```bash
 pip install .
 ```
 
 With optional Parquet support:
 
-```powershell
+```bash
 pip install .[parquet]
 ```
 
 ## Running Tests
 
-```powershell
+```bash
 python -m unittest discover -s tests
 ```
 
 The tests prepend `src` to `sys.path`, so they can run without installing the package first.
-The current shell does not expose Python on `PATH`, so test execution may require activating your local interpreter first.
+
+## Production Runtime Controls
+
+- `CLINICALAI_PROFILE`: runtime profile (`local`, `staging`, `prod`)
+- `CLINICALAI_CORRELATION_ID`: request correlation identifier (optional)
+- `CLINICALAI_AUDIT_LOG`: append-only audit log path (recommended for non-local runs)
+- `CLINICALAI_REDACT_LOGS`: redact sensitive content in structured logs (`true` by default)
+
+## Operations and Compliance Docs
+
+- [Security and PHI Policy](docs/SECURITY_AND_PHI.md)
+- [Operations Runbook](docs/RUNBOOK.md)
+- [Release Process](docs/RELEASE.md)
+- [Changelog](CHANGELOG.md)

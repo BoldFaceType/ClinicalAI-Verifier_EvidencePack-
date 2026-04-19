@@ -14,13 +14,18 @@ def write_reports(
     records_processed: int,
     input_format: str,
     findings: list[RuleResult],
+    correlation_id: str,
+    profile: str,
 ) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
     findings_path = output_dir / "findings.json"
     summary_path = output_dir / "summary.md"
     findings_payload = {
+        "contract_version": "preflight.findings.v1",
         "validator_version": "0.1.0",
         "ruleset_version": "dsfe-v0.1",
+        "correlation_id": correlation_id,
+        "profile": profile,
         "input_file": str(input_file),
         "input_format": input_format,
         "records_processed": records_processed,
@@ -41,8 +46,11 @@ def write_reports(
         encoding="utf-8",
     )
     return {
+        "contract_version": "preflight.summary.v1",
         "validator_version": "0.1.0",
         "ruleset_version": "dsfe-v0.1",
+        "correlation_id": correlation_id,
+        "profile": profile,
         "input_file": str(input_file),
         "input_format": input_format,
         "records_processed": records_processed,

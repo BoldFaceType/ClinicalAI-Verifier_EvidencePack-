@@ -28,9 +28,11 @@ class PacketGeneratorTests(unittest.TestCase):
             self.assertTrue(packet_json.exists())
             self.assertTrue(packet_pdf.exists())
             packet = json.loads(packet_json.read_text(encoding="utf-8"))
+            self.assertEqual(packet["contract_version"], "evidence.packet.v1")
             self.assertEqual(packet["denial_code"], "AUTH-001")
             self.assertEqual(packet["strategy_category"], "prior_auth_missing")
             self.assertGreaterEqual(len(packet["evidence_excerpts"]), 1)
+            self.assertIn(packet["pdf_renderer"], {"reportlab", "builtin_minimal"})
         finally:
             cleanup_temp_dir(temp_path)
 

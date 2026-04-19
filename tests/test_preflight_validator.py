@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 import unittest
 from pathlib import Path
 
@@ -29,6 +30,7 @@ class PreflightValidatorTests(unittest.TestCase):
                 encoding="utf-8",
             )
             summary = run_validation(input_csv, output_dir)
+            self.assertEqual(summary["contract_version"], "preflight.summary.v1")
             self.assertEqual(summary["records_processed"], 2)
             self.assertEqual(summary["error_count"], 4)
             self.assertEqual(summary["warning_count"], 1)
@@ -78,6 +80,99 @@ class PreflightValidatorTests(unittest.TestCase):
             input_csv.write_text("member_id,measure_id\nM-1,DSF-E\n", encoding="utf-8")
             with self.assertRaises(ValueError):
                 run_validation(input_csv, output_dir)
+        finally:
+            cleanup_temp_dir(temp_path)
+
+    def test_run_validation_fails_when_ndjson_record_is_missing_required_field(self) -> None:
+        temp_path = make_temp_dir("preflight_ndjson_missing_record_field")
+        try:
+            input_file = temp_path / "dsfe.ndjson"
+            output_dir = temp_path / "out"
+            input_file.write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "member_id": "M-1",
+                                "measure_id": "DSF-E",
+                                "screening_date": "2025-03-01",
+                                "screening_tool": "PHQ-2",
+                                "screening_score": "2",
+                                "screening_loinc": "44249-1",
+                                "bipolar_history": "0",
+                                "prior_year_depression_dx": "0",
+                                "source_kind": "structured",
+                            }
+                        ),
+                        json.dumps(
+                            {
+                                "member_id": "M-2",
+                                "measure_id": "DSF-E",
+                                "screening_date": "2025-03-02",
+                                "screening_score": "2",
+                                "screening_loinc": "44249-1",
+                                "bipolar_history": "0",
+                                "prior_year_depression_dx": "0",
+                                "source_kind": "structured",
+                            }
+                        ),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "record 2 is missing required DSF-E fields"):
+                run_validation(input_file, output_dir)
+        finally:
+            cleanup_temp_dir(temp_path)
+
+    def test_run_validation_handles_performance_smoke_dataset(self) -> None:
+        temp_path = make_temp_dir("preflight_performance_smoke")
+        try:
+            input_csv = temp_path / "bulk.csv"
+            output_dir = temp_path / "out"
+            header = (
+                "member_id,measure_id,screening_date,screening_tool,screening_score,screening_loinc,"
+                "follow_up_code,follow_up_date,bipolar_history,prior_year_depression_dx,source_kind"
+            )
+            rows = [
+                f"M-{index},DSF-E,2025-04-01,PHQ-2,2,44249-1,,,0,0,structured"
+                for index in range(1, 501)
+            ]
+            input_csv.write_text("\n".join([header, *rows]) + "\n", encoding="utf-8")
+            start = time.perf_counter()
+            summary = run_validation(input_csv, output_dir)
+            elapsed = time.perf_counter() - start
+            self.assertEqual(summary["records_processed"], 500)
+            self.assertLess(elapsed, 3.0)
+        finally:
+            cleanup_temp_dir(temp_path)
+
+    def test_run_validation_writes_audit_event_when_path_provided(self) -> None:
+        temp_path = make_temp_dir("preflight_audit")
+        try:
+            input_csv = temp_path / "dsfe.csv"
+            output_dir = temp_path / "out"
+            audit_path = temp_path / "audit" / "events.jsonl"
+            input_csv.write_text(
+                "\n".join(
+                    [
+                        "member_id,measure_id,screening_date,screening_tool,screening_score,screening_loinc,follow_up_code,follow_up_date,bipolar_history,prior_year_depression_dx,source_kind",
+                        "M-100,DSF-E,2025-04-01,PHQ-9,12,44261-6,96127,2025-04-10,0,0,structured",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+            run_validation(
+                input_csv,
+                output_dir,
+                correlation_id="corr-xyz",
+                profile="prod",
+                audit_log_path=audit_path,
+            )
+            audit_lines = audit_path.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(len(audit_lines), 1)
+            self.assertIn("corr-xyz", audit_lines[0])
         finally:
             cleanup_temp_dir(temp_path)
 

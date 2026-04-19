@@ -24,6 +24,40 @@ class DenialParserTests(unittest.TestCase):
         self.assertIn("authorization", decision.denial_text.lower())
         self.assertEqual(decision.outcome, "error")
 
+    def test_parser_prefers_more_actionable_reason(self) -> None:
+        payload = {
+            "resourceType": "ClaimResponse",
+            "outcome": "error",
+            "disposition": "Denied for documentation",
+            "item": [
+                {"adjudication": [{"reason": {"text": "Documentation required"}}]},
+                {
+                    "adjudication": [
+                        {
+                            "reason": {
+                                "coding": [{"display": "Missing authorization"}],
+                            }
+                        }
+                    ]
+                },
+            ],
+        }
+        model = parse_claim_response(payload)
+        decision = parse_denial_reason(model)
+        self.assertEqual(decision.denial_code, "AUTH-UNSPECIFIED")
+        self.assertIn("authorization", decision.denial_text.lower())
+
+    def test_parser_assigns_medical_necessity_fallback_code(self) -> None:
+        payload = {
+            "resourceType": "ClaimResponse",
+            "outcome": "partial",
+            "disposition": "Denied due to medical necessity criteria",
+            "item": [{"adjudication": [{"reason": {"text": "medical necessity criteria"}}]}],
+        }
+        model = parse_claim_response(payload)
+        decision = parse_denial_reason(model)
+        self.assertEqual(decision.denial_code, "MED-NECESSITY-UNSPECIFIED")
+
 
 if __name__ == "__main__":
     unittest.main()

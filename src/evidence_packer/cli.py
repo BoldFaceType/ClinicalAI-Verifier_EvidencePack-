@@ -15,6 +15,7 @@ from cli_common import (
     prompt_text,
 )
 from evidence_packer.pipeline import run_packaging
+from runtime_support import classify_error, emit_structured_log, load_runtime_settings
 
 ParserConfig = dict[str, Path | bool]
 
@@ -78,12 +79,27 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Disable ANSI colors and terminal highlighting.",
     )
+    parser.add_argument(
+        "--profile",
+        default=None,
+        help="Runtime profile (defaults to CLINICALAI_PROFILE or local).",
+    )
+    parser.add_argument(
+        "--correlation-id",
+        default=None,
+        help="Correlation ID for logs and audit records.",
+    )
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(list(argv) if argv is not None else None)
     palette = Palette(enabled=not args.no_color)
+    settings = load_runtime_settings(
+        tool="evidence_packer",
+        profile=args.profile,
+        correlation_id=args.correlation_id,
+    )
     config = _collect_cli_config(
         wizard=args.wizard or not (args.claim_response_json and args.notes_dir and args.output_dir),
         claim_response_json=args.claim_response_json,
@@ -95,22 +111,34 @@ def main(argv: Sequence[str] | None = None) -> int:
     if config is None:
         print(
             json.dumps(
-                {"status": "cancelled", "message": "Evidence packing cancelled by user."}, indent=2
+                {
+                    "status": "cancelled",
+                    "message": "Evidence packing cancelled by user.",
+                    "correlation_id": settings.correlation_id,
+                },
+                indent=2,
             )
         )
         return 2
 
+    emit_structured_log(settings, level="info", event="evidence.packing.start", payload=config)
     try:
         summary = run_packaging(
             config["claim_response_json"],
             config["notes_dir"],
             config["output_dir"],
             use_ai=bool(config["use_ai"]),
+            correlation_id=settings.correlation_id,
+            profile=settings.profile,
+            audit_log_path=settings.audit_log_path,
         )
     except (OSError, ValueError) as exc:
+        app_error = classify_error("evidence", exc)
         payload = build_error_payload(
             tool="evidence_packer",
-            exc=exc,
+            exc=app_error,
+            error_code=app_error.code,
+            correlation_id=settings.correlation_id,
             inputs=config,
             hints=[
                 "Confirm that the ClaimResponse path points to a readable JSON file.",
@@ -121,10 +149,26 @@ def main(argv: Sequence[str] | None = None) -> int:
             ],
         )
         print(palette.error("Evidence packet generation could not start."))
-        print(palette.warning(str(exc)))
+        print(palette.warning(str(app_error)))
         print(json.dumps(payload, indent=2))
+        emit_structured_log(
+            settings,
+            level="error",
+            event="evidence.packing.failed",
+            payload={"error_code": app_error.code, "message": str(app_error)},
+        )
         return 2
     _print_human_summary(summary, palette)
+    emit_structured_log(
+        settings,
+        level="info",
+        event="evidence.packing.completed",
+        payload={
+            "status": summary.get("status"),
+            "output_generated": summary.get("output_generated"),
+            "excerpt_count": summary.get("excerpt_count"),
+        },
+    )
     print(json.dumps(summary, indent=2))
     return 0 if summary.get("output_generated") else 1
 

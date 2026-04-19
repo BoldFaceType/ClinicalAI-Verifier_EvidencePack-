@@ -7,11 +7,19 @@ from pathlib import Path
 from preflight_validator.reports.writer import write_reports
 from preflight_validator.rules.engine import run_rules
 from preflight_validator.schemas.dsfe import REQUIRED_FIELDS, DsfeRecord
+from runtime_support import append_audit_event
 
 ValidationSummary = dict[str, object]
 
 
-def run_validation(input_file: Path, output_dir: Path) -> ValidationSummary:
+def run_validation(
+    input_file: Path,
+    output_dir: Path,
+    *,
+    correlation_id: str | None = None,
+    profile: str = "local",
+    audit_log_path: Path | None = None,
+) -> ValidationSummary:
     if not input_file.exists():
         raise ValueError(f"Input file does not exist: {input_file}")
     if not input_file.is_file():
@@ -23,13 +31,28 @@ def run_validation(input_file: Path, output_dir: Path) -> ValidationSummary:
         for index, row in enumerate(rows, start=2)
     ]
     findings = run_rules(records)
-    return write_reports(
+    summary = write_reports(
         input_file=input_file,
         output_dir=output_dir,
         records_processed=len(records),
         input_format=input_format,
         findings=findings,
+        correlation_id=correlation_id or "",
+        profile=profile,
     )
+    append_audit_event(
+        audit_log_path,
+        {
+            "event": "preflight.validation.completed",
+            "correlation_id": correlation_id or "",
+            "profile": profile,
+            "records_processed": len(records),
+            "error_count": summary["error_count"],
+            "warning_count": summary["warning_count"],
+            "input_file": str(input_file),
+        },
+    )
+    return summary
 
 
 def _detect_input_format(input_file: Path) -> str:
@@ -89,14 +112,7 @@ def _load_ndjson_rows(input_file: Path) -> list[dict[str, object]]:
                     f"NDJSON line {line_number} is not a JSON object. Each line must be an object with DSF-E fields."
                 )
             rows.append(payload)
-    if rows:
-        missing = [field for field in REQUIRED_FIELDS if field not in rows[0]]
-        if missing:
-            raise ValueError(
-                "The NDJSON input is missing required DSF-E fields in the first record: "
-                + ", ".join(missing)
-                + "."
-            )
+    _validate_required_fields(rows, input_format="NDJSON")
     return rows
 
 
@@ -109,10 +125,20 @@ def _load_parquet_rows(input_file: Path) -> list[dict[str, object]]:
         ) from exc
     table = pq.read_table(input_file)
     rows = table.to_pylist()
-    if rows:
-        missing = [field for field in REQUIRED_FIELDS if field not in rows[0]]
+    _validate_required_fields(rows, input_format="Parquet")
+    return rows
+
+
+def _validate_required_fields(rows: list[dict[str, object]], *, input_format: str) -> None:
+    for index, row in enumerate(rows, start=1):
+        if not isinstance(row, dict):
+            raise ValueError(
+                f"{input_format} record {index} is not an object with DSF-E fields."
+            )
+        missing = [field for field in REQUIRED_FIELDS if field not in row]
         if missing:
             raise ValueError(
-                "The Parquet input is missing required DSF-E fields: " + ", ".join(missing) + "."
+                f"{input_format} record {index} is missing required DSF-E fields: "
+                + ", ".join(missing)
+                + "."
             )
-    return rows

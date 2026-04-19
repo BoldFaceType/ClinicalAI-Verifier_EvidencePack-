@@ -47,6 +47,7 @@ class EvidencePackerTests(unittest.TestCase):
                 encoding="utf-8",
             )
             summary = run_packaging(claim_response_json, notes_dir, output_dir)
+            self.assertEqual(summary["contract_version"], "evidence.summary.v1")
             self.assertEqual(summary["status"], "appeal_packet_generated")
             self.assertEqual(summary["denial_code"], "AUTH-001")
             self.assertEqual(summary["strategy_category"], "prior_auth_missing")
@@ -76,6 +77,7 @@ class EvidencePackerTests(unittest.TestCase):
                 encoding="utf-8",
             )
             summary = run_packaging(claim_response_json, notes_dir, output_dir)
+            self.assertEqual(summary["contract_version"], "evidence.summary.v1")
             self.assertEqual(summary["status"], "no_action")
             self.assertFalse(summary["output_generated"])
         finally:
@@ -93,6 +95,51 @@ class EvidencePackerTests(unittest.TestCase):
             )
             with self.assertRaises(ValueError):
                 run_packaging(claim_response_json, notes_dir, output_dir)
+        finally:
+            cleanup_temp_dir(temp_path)
+
+    def test_run_packaging_writes_audit_event_when_path_provided(self) -> None:
+        temp_path = make_temp_dir("evidence_audit")
+        try:
+            claim_response_json = temp_path / "claimresponse_denied.json"
+            notes_dir = temp_path / "clinical_notes"
+            output_dir = temp_path / "out"
+            audit_path = temp_path / "audit" / "events.jsonl"
+            notes_dir.mkdir()
+            claim_response_json.write_text(
+                json.dumps(
+                    {
+                        "resourceType": "ClaimResponse",
+                        "outcome": "error",
+                        "disposition": "Authorization missing",
+                        "item": [
+                            {
+                                "adjudication": [
+                                    {
+                                        "reason": {
+                                            "coding": [{"code": "AUTH-001"}],
+                                            "text": "Missing authorization",
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (notes_dir / "note.txt").write_text("Authorization approved.", encoding="utf-8")
+            run_packaging(
+                claim_response_json,
+                notes_dir,
+                output_dir,
+                correlation_id="corr-123",
+                profile="prod",
+                audit_log_path=audit_path,
+            )
+            audit_lines = audit_path.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(len(audit_lines), 1)
+            self.assertIn("corr-123", audit_lines[0])
         finally:
             cleanup_temp_dir(temp_path)
 

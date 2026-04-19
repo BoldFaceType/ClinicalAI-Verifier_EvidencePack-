@@ -84,12 +84,16 @@ def build_error_payload(
     *,
     tool: str,
     exc: Exception,
+    error_code: str,
+    correlation_id: str,
     inputs: dict[str, Path | bool | str | None],
     hints: list[str],
 ) -> dict[str, object]:
     return {
         "status": "fatal_error",
         "tool": tool,
+        "error_code": error_code,
+        "correlation_id": correlation_id,
         "message": str(exc),
         "details": {
             "exception_type": type(exc).__name__,

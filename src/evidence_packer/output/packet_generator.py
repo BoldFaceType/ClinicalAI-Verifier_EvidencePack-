@@ -16,6 +16,9 @@ def generate_appeal_packet(
     denial_text: str,
     evidence_plan: EvidencePlan,
     excerpts: list[EvidenceExcerpt],
+    correlation_id: str,
+    profile: str,
+    extraction_mode: str,
 ) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
     packet_path = output_dir / "appeal_packet.pdf"
@@ -24,6 +27,9 @@ def generate_appeal_packet(
         evidence_plan, "required_documents", getattr(evidence_plan, "evidence_types", [])
     )
     manifest = {
+        "contract_version": "evidence.packet.v1",
+        "correlation_id": correlation_id,
+        "profile": profile,
         "claim_response_file": str(claim_response_path),
         "outcome": outcome,
         "denial_code": denial_code,
@@ -31,28 +37,57 @@ def generate_appeal_packet(
         "strategy_category": evidence_plan.category,
         "required_documents": list(required_documents),
         "evidence_excerpts": [excerpt.__dict__ for excerpt in excerpts],
+        "extraction_mode": extraction_mode,
+        "extraction_engine": "governed_v1",
         "appeal_ready": bool(excerpts),
         "packet_pdf": str(packet_path),
     }
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-    _write_simple_pdf(
-        packet_path,
-        title="Appeal Packet",
-        lines=[
-            f"Outcome: {outcome}",
-            f"Denial Code: {denial_code}",
-            f"Denial Text: {denial_text}",
-            f"Strategy Category: {evidence_plan.category}",
-            "Required Documents:",
-            *[f"- {item}" for item in manifest["required_documents"]],
-            "Evidence Excerpts:",
-            *[
-                f"- {excerpt.source} ({excerpt.confidence:.2f}): {excerpt.excerpt}"
-                for excerpt in excerpts
-            ],
-        ],
-    )
+    lines = [
+        f"Outcome: {outcome}",
+        f"Denial Code: {denial_code}",
+        f"Denial Text: {denial_text}",
+        f"Strategy Category: {evidence_plan.category}",
+        "Required Documents:",
+        *[f"- {item}" for item in manifest["required_documents"]],
+        "Evidence Excerpts:",
+        *[f"- {excerpt.source} ({excerpt.confidence:.2f}): {excerpt.excerpt}" for excerpt in excerpts],
+    ]
+    manifest["pdf_renderer"] = _write_pdf(packet_path, title="Appeal Packet", lines=lines)
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     return manifest
+
+
+def _write_pdf(path: Path, *, title: str, lines: list[str]) -> str:
+    if _write_reportlab_pdf(path, title=title, lines=lines):
+        return "reportlab"
+    _write_simple_pdf(path, title=title, lines=lines)
+    return "builtin_minimal"
+
+
+def _write_reportlab_pdf(path: Path, *, title: str, lines: list[str]) -> bool:
+    try:
+        from reportlab.lib.pagesizes import letter
+        from reportlab.pdfgen import canvas
+    except ImportError:
+        return False
+
+    pdf = canvas.Canvas(str(path), pagesize=letter, pageCompression=0, invariant=1)
+    width, height = letter
+    y = height - 72
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawString(72, y, title)
+    y -= 24
+    pdf.setFont("Helvetica", 11)
+    for line in lines:
+        if y < 72:
+            pdf.showPage()
+            y = height - 72
+            pdf.setFont("Helvetica", 11)
+        pdf.drawString(72, y, line[:140])
+        y -= 16
+    pdf.save()
+    return True
 
 
 def _write_simple_pdf(path: Path, *, title: str, lines: list[str]) -> None:

@@ -10,6 +10,7 @@ from evidence_packer.llm.evidence_extractor import extract_supporting_evidence
 from evidence_packer.models.fhir_models import parse_claim_response
 from evidence_packer.output.packet_generator import generate_appeal_packet
 from evidence_packer.strategy.evidence_mapper import resolve_evidence_strategy
+from runtime_support import append_audit_event
 
 PackagingSummary = dict[str, object]
 
@@ -20,6 +21,9 @@ def run_packaging(
     output_dir: Path,
     *,
     use_ai: bool = False,
+    correlation_id: str | None = None,
+    profile: str = "local",
+    audit_log_path: Path | None = None,
 ) -> PackagingSummary:
     if not claim_response_json.exists():
         raise ValueError(f"ClaimResponse file does not exist: {claim_response_json}")
@@ -48,14 +52,26 @@ def run_packaging(
 
     if not should_continue(model):
         summary: PackagingSummary = {
+            "contract_version": "evidence.summary.v1",
             "claim_response_file": str(claim_response_json),
             "status": "no_action",
             "message": "ClaimResponse outcome is not denied or partially denied.",
             "output_generated": False,
             "ai_assisted": use_ai,
+            "correlation_id": correlation_id or "",
+            "profile": profile,
         }
         output_dir.mkdir(parents=True, exist_ok=True)
         (output_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+        append_audit_event(
+            audit_log_path,
+            {
+                "event": "evidence.packing.no_action",
+                "correlation_id": correlation_id or "",
+                "profile": profile,
+                "claim_response_file": str(claim_response_json),
+            },
+        )
         return summary
 
     denial = parse_denial_reason(model)
@@ -75,9 +91,13 @@ def run_packaging(
         denial_text=denial.denial_text,
         evidence_plan=evidence_plan,
         excerpts=excerpts,
+        correlation_id=correlation_id or "",
+        profile=profile,
+        extraction_mode="ai" if use_ai else "heuristic",
     )
 
     summary: PackagingSummary = {
+        "contract_version": "evidence.summary.v1",
         "claim_response_file": str(claim_response_json),
         "status": "appeal_packet_generated",
         "outcome": denial.outcome,
@@ -86,6 +106,8 @@ def run_packaging(
         "required_documents": evidence_plan.required_documents,
         "excerpt_count": len(excerpts),
         "ai_assisted": use_ai,
+        "correlation_id": correlation_id or "",
+        "profile": profile,
         "output_generated": True,
         "outputs": {
             "packet_pdf": manifest["packet_pdf"],
@@ -93,4 +115,17 @@ def run_packaging(
         },
     }
     (output_dir / "summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    append_audit_event(
+        audit_log_path,
+        {
+            "event": "evidence.packing.completed",
+            "correlation_id": correlation_id or "",
+            "profile": profile,
+            "claim_response_file": str(claim_response_json),
+            "denial_code": denial.denial_code,
+            "strategy_category": evidence_plan.category,
+            "excerpt_count": len(excerpts),
+            "extraction_mode": "ai" if use_ai else "heuristic",
+        },
+    )
     return summary
