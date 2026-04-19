@@ -25,17 +25,28 @@ REQUIRED_FIELDS = (
 ALL_FIELDS = REQUIRED_FIELDS + (
     "follow_up_code",
     "follow_up_date",
+    "measure_year",
 )
+
+MEASURE_ID = "DSF-E"
 
 APPROVED_LOINC_BY_TOOL: dict[str, set[str]] = {
     "PHQ-2": {"44249-1"},
     "PHQ-9": {"44261-6"},
 }
 
+# Reverse map: LOINC code → screening tool name
+LOINC_TO_TOOL: dict[str, str] = {
+    loinc: tool
+    for tool, loincs in APPROVED_LOINC_BY_TOOL.items()
+    for loinc in loincs
+}
+
 FOLLOW_UP_CODES = {"96127", "G8431", "G8510", "99484"}
 THRESHOLDS = {"PHQ-2": 3, "PHQ-9": 10}
 BOOLEAN_TRUE = {"1", "true", "yes", "y"}
 BOOLEAN_FALSE = {"0", "false", "no", "n"}
+VALID_SOURCE_KINDS: frozenset[str] = frozenset({"structured"})
 
 
 if BaseModel is not None:
@@ -54,6 +65,7 @@ if BaseModel is not None:
         bipolar_history: str = ""
         prior_year_depression_dx: str = ""
         source_kind: str = ""
+        measure_year: str = ""
 
         @field_validator("*", mode="before")
         @classmethod
@@ -76,6 +88,7 @@ class DsfeRecord:
     bipolar_history: str
     prior_year_depression_dx: str
     source_kind: str
+    measure_year: str
     input_format: str
     row_number: int
 
