@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "clinica-ai-engineering"
 version = "0.2.0"
-description = "DSF-E pre-flight validator and denial evidence packer for clinical AI engineering."
+description = "Clinical AI data tools: DSF-E pre-flight validator and denial evidence packer."
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [
@@ -27,8 +27,8 @@ dev = [
 
 [project.scripts]
 preflight-validator = "preflight_validator.cli:main"
-validate-dsfe       = "preflight_validator.cli:main"
-evidence-packer     = "evidence_packer.cli:main"
+validate-dsfe = "preflight_validator.cli:main"
+evidence-packer = "evidence_packer.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -37,9 +37,13 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.ruff]
-line-length    = 100
+line-length = 100
 target-version = "py311"
-exclude = [".venv", ".uv-cache", "__pycache__"]
+exclude = [
+  ".venv",
+  ".uv-cache",
+  "__pycache__",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
