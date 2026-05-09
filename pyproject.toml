@@ -17,7 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
 parquet = [
-  "pyarrow>=15,<18"
+  "pyarrow>=15,<25"
 ]
 ai = [
   "openai>=1.84,<2"
