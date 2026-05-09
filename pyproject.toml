@@ -24,7 +24,7 @@ ai = [
 ]
 azure = [
   "azure-identity>=1.16,<2",
-  "azure-search-documents>=11.6,<12",
+  "azure-search-documents>=11.6,<13",
   "openai>=1.84,<2"
 ]
 dev = [
