@@ -1,0 +1,19 @@
+[
+  {
+    "case_id": "auth_missing_synthetic_001",
+    "claim_response": "examples/evidence_ai/claimresponse_denied.json",
+    "notes_dir": "examples/evidence_ai/clinical_notes",
+    "expected_verified_quotes": [
+      {
+        "source": "note_2025-08-10.txt",
+        "quote": "Prior auth was approved on 2025-08-10."
+      }
+    ],
+    "expected_rejected_quotes": [
+      {
+        "source": "note_2025-08-12.txt",
+        "quote": "Authorization approval was documented on 2025-08-12."
+      }
+    ]
+  }
+]

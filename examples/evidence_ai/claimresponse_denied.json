@@ -1,0 +1,23 @@
+{
+  "resourceType": "ClaimResponse",
+  "id": "synthetic-ai-demo-001",
+  "outcome": "error",
+  "disposition": "Authorization missing for advanced imaging request.",
+  "item": [
+    {
+      "adjudication": [
+        {
+          "reason": {
+            "coding": [
+              {
+                "code": "AUTH-001",
+                "display": "Missing authorization"
+              }
+            ],
+            "text": "Missing authorization"
+          }
+        }
+      ]
+    }
+  ]
+}

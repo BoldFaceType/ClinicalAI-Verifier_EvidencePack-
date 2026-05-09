@@ -7,6 +7,22 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased]
+
+### Added
+
+**Evidence Packer**
+- AI evidence contracts and deterministic citation verifier for AI-proposed evidence quotes.
+- `--mode ai-assisted --verify-citations` CLI path and AI verification audit counts in packet output.
+- Optional `ai` and `azure` dependency extras, Azure AI Search adapter, synthetic AI demo data, golden eval fixture, and AI/responsible-AI setup docs.
+
+### Changed
+
+- AI extraction now excludes non-verbatim model quotes from final appeal evidence.
+- Optional OpenAI client loading no longer depends on `instructor`.
+
+---
+
 ## [0.2.0] â€” 2026-04-19
 
 ### Added

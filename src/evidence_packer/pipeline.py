@@ -6,7 +6,10 @@ from pathlib import Path
 from evidence_packer.fetcher.clinical_fetcher import load_clinical_notes
 from evidence_packer.handler.denial_handler import should_continue
 from evidence_packer.handler.parser import parse_denial_reason
-from evidence_packer.llm.evidence_extractor import extract_supporting_evidence
+from evidence_packer.llm.evidence_extractor import (
+    SupportsResponses,
+    extract_supporting_evidence_with_audit,
+)
 from evidence_packer.models.fhir_models import parse_claim_response
 from evidence_packer.output.packet_generator import generate_appeal_packet
 from evidence_packer.strategy.evidence_mapper import resolve_evidence_strategy
@@ -20,6 +23,7 @@ def run_packaging(
     output_dir: Path,
     *,
     use_ai: bool = False,
+    ai_client: SupportsResponses | None = None,
 ) -> PackagingSummary:
     if not claim_response_json.exists():
         raise ValueError(f"ClaimResponse file does not exist: {claim_response_json}")
@@ -61,12 +65,14 @@ def run_packaging(
     denial = parse_denial_reason(model)
     evidence_plan = resolve_evidence_strategy(denial)
     notes = load_clinical_notes(notes_dir)
-    excerpts = extract_supporting_evidence(
+    excerpts, ai_audit = extract_supporting_evidence_with_audit(
         notes,
         evidence_plan,
         denial.denial_text,
         use_ai=use_ai,
+        client=ai_client,
     )
+    ai_audit_payload = ai_audit.to_audit_dict() if ai_audit is not None else None
     manifest = generate_appeal_packet(
         output_dir=output_dir,
         claim_response_path=claim_response_json,
@@ -75,6 +81,7 @@ def run_packaging(
         denial_text=denial.denial_text,
         evidence_plan=evidence_plan,
         excerpts=excerpts,
+        ai_audit=ai_audit_payload,
     )
 
     summary: PackagingSummary = {
@@ -86,6 +93,12 @@ def run_packaging(
         "required_documents": evidence_plan.required_documents,
         "excerpt_count": len(excerpts),
         "ai_assisted": use_ai,
+        "verified_evidence_count": (
+            ai_audit_payload["verified_evidence_count"] if ai_audit_payload else None
+        ),
+        "rejected_evidence_count": (
+            ai_audit_payload["rejected_evidence_count"] if ai_audit_payload else None
+        ),
         "output_generated": True,
         "outputs": {
             "packet_pdf": manifest["packet_pdf"],

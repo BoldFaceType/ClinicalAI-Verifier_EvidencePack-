@@ -16,7 +16,7 @@ from cli_common import (
 )
 from evidence_packer.pipeline import run_packaging
 
-ParserConfig = dict[str, Path | bool]
+ParserConfig = dict[str, Path | bool | str]
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -34,12 +34,12 @@ def build_parser() -> argparse.ArgumentParser:
             "    evidence-packer --wizard\n\n"
             "  Quick path with heuristic extraction:\n"
             "    evidence-packer samples/claimresponse_denied.json samples/clinical_notes out/evidence\n\n"
-            "  AI-assisted extraction with Instructor:\n"
-            "    evidence-packer claim.json notes out --use-ai\n\n"
+            "  AI-assisted extraction with citation verification:\n"
+            "    evidence-packer claim.json notes out --mode ai-assisted --verify-citations\n\n"
             "Troubleshooting:\n"
             "  - If the file is not a ClaimResponse, extract the ClaimResponse resource before running.\n"
             "  - If no notes are found, add .txt notes or JSON notes with a 'text' or 'note' field.\n"
-            "  - If --use-ai is enabled, set OPENAI_API_KEY if you expect AI-assisted extraction.\n"
+            "  - If --mode ai-assisted is enabled, configure Azure OpenAI or OPENAI_API_KEY.\n"
             "  - If you are unsure about paths or mode, rerun with --wizard."
         ),
         formatter_class=argparse.RawTextHelpFormatter,
@@ -71,7 +71,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--use-ai",
         action="store_true",
-        help="Use Instructor + OpenAI for structured excerpt extraction when OPENAI_API_KEY is set.",
+        help="Deprecated alias for --mode ai-assisted.",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=("deterministic", "ai-assisted"),
+        default="deterministic",
+        help="Extraction mode. Deterministic mode is offline-safe; ai-assisted uses configured AI clients when available.",
+    )
+    parser.add_argument(
+        "--verify-citations",
+        action="store_true",
+        help="Require AI-proposed evidence to appear verbatim in the cited source note.",
     )
     parser.add_argument(
         "--no-color",
@@ -89,7 +100,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         claim_response_json=args.claim_response_json,
         notes_dir=args.notes_dir,
         output_dir=args.output_dir,
-        use_ai=args.use_ai,
+        use_ai=args.use_ai or args.mode == "ai-assisted",
+        mode=args.mode,
+        verify_citations=args.verify_citations,
         palette=palette,
     )
     if config is None:
@@ -136,6 +149,8 @@ def _collect_cli_config(
     notes_dir: Path | None,
     output_dir: Path | None,
     use_ai: bool,
+    mode: str,
+    verify_citations: bool,
     palette: Palette,
 ) -> ParserConfig | None:
     if not wizard:
@@ -148,6 +163,8 @@ def _collect_cli_config(
             "notes_dir": notes_dir,
             "output_dir": output_dir,
             "use_ai": use_ai,
+            "mode": mode,
+            "verify_citations": verify_citations,
         }
 
     print_banner(
@@ -189,6 +206,8 @@ def _collect_cli_config(
             notes_dir=chosen_notes,
             output_dir=chosen_output,
             use_ai=ai_choice == "a",
+            mode="ai-assisted" if ai_choice == "a" else "deterministic",
+            verify_citations=True,
             palette=palette,
         )
     if not confirm("Generate the packet now?", default=True):
@@ -198,6 +217,8 @@ def _collect_cli_config(
         "notes_dir": chosen_notes,
         "output_dir": chosen_output,
         "use_ai": ai_choice == "a",
+        "mode": "ai-assisted" if ai_choice == "a" else "deterministic",
+        "verify_citations": True,
     }
 
 

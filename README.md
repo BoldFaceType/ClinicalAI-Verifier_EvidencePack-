@@ -8,7 +8,13 @@
 A portfolio-grade toolkit for two adjacent clinical data problems:
 
 1. **Pre-flight Validator** — Catches DSF-E (Depression Screening and Follow-up Encounter) data quality issues *before* they reach HEDIS measure processing, surfacing actionable rule findings per member.
-2. **Evidence Packer** — Parses FHIR ClaimResponse denial payloads and auto-assembles appeal evidence packets from clinical notes, with optional AI-assisted extraction.
+2. **Evidence Packer** — Parses FHIR ClaimResponse denial payloads and auto-assembles appeal evidence packets from clinical notes, with optional AI-assisted extraction and deterministic citation verification.
+
+## Applied AI Layer
+
+The Evidence Packer includes an optional AI-assisted evidence workflow. The AI layer proposes exact supporting evidence quotes from clinical notes for denied payer `ClaimResponse` workflows. Every AI-proposed quote is passed through deterministic citation verification before it can enter the final appeal packet.
+
+This is designed as a human-in-the-loop clinical operations assistant, not an autonomous medical decision system.
 
 ---
 
@@ -33,6 +39,7 @@ src/
     ├── handler/
     │   ├── denial_handler.py            # Detect denial from ClaimResponse outcome
     │   └── parser.py                    # Extract DenialDecision from FHIR model
+    ├── ai/                             # AI contracts, prompts, Azure Search adapter, verifier
     ├── llm/evidence_extractor.py        # Keyword + optional AI evidence extraction
     ├── models/fhir_models.py            # FHIR ClaimResponse dataclasses + Pydantic models
     ├── output/packet_generator.py       # Generate JSON manifest + PDF appeal packet
@@ -51,6 +58,10 @@ pip install -e .
 
 # With optional Parquet support
 pip install -e ".[parquet]"
+
+# With optional AI / Azure AI support
+pip install -e ".[ai]"
+pip install -e ".[azure]"
 ```
 
 Requires Python 3.11+. No LLM API keys needed for standard operation.
@@ -153,8 +164,8 @@ Parses a FHIR R4 `ClaimResponse` denial and assembles an appeal packet from clin
 # Heuristic mode (no API key required)
 evidence-packer claim_response.json notes/ out/appeal
 
-# AI-assisted extraction (requires OPENAI_API_KEY)
-evidence-packer claim_response.json notes/ out/appeal --use-ai
+# AI-assisted extraction with citation verification
+evidence-packer claim_response.json notes/ out/appeal --mode ai-assisted --verify-citations
 
 # Guided wizard
 evidence-packer --wizard
@@ -164,8 +175,28 @@ evidence-packer --wizard
 
 | File | Description |
 |------|-------------|
-| `manifest.json` | Structured appeal packet with denial code, strategy, and evidence excerpts |
+| `packet.json` | Structured appeal packet with denial code, strategy, and evidence excerpts |
 | `appeal_packet.pdf` | Formatted PDF ready for payer submission |
+
+When AI-assisted extraction is used, `packet.json` also includes an `ai_audit` section with verified and rejected evidence counts. Rejected AI evidence is retained for review but excluded from the final evidence excerpt list.
+
+### AI-assisted workflow
+
+```text
+Denied ClaimResponse
+  -> evidence strategy mapper
+  -> clinical notes
+  -> optional Azure AI Search retrieval
+  -> Azure OpenAI / OpenAI evidence extraction
+  -> deterministic citation verification
+  -> packet.json + appeal_packet.pdf
+```
+
+See:
+
+- [AI architecture](docs/ai_architecture.md)
+- [Responsible AI notes](docs/responsible_ai.md)
+- [Azure setup](docs/azure_setup.md)
 
 ### Denial → evidence strategy mapping
 

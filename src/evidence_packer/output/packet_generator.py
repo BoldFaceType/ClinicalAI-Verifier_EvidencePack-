@@ -16,6 +16,7 @@ def generate_appeal_packet(
     denial_text: str,
     evidence_plan: EvidencePlan,
     excerpts: list[EvidenceExcerpt],
+    ai_audit: dict[str, object] | None = None,
 ) -> dict[str, object]:
     output_dir.mkdir(parents=True, exist_ok=True)
     packet_path = output_dir / "appeal_packet.pdf"
@@ -31,6 +32,7 @@ def generate_appeal_packet(
         "strategy_category": evidence_plan.category,
         "required_documents": list(required_documents),
         "evidence_excerpts": [excerpt.__dict__ for excerpt in excerpts],
+        "ai_audit": ai_audit,
         "appeal_ready": bool(excerpts),
         "packet_pdf": str(packet_path),
     }
@@ -50,9 +52,20 @@ def generate_appeal_packet(
                 f"- {excerpt.source} ({excerpt.confidence:.2f}): {excerpt.excerpt}"
                 for excerpt in excerpts
             ],
+            *(_format_ai_audit_lines(ai_audit) if ai_audit else []),
         ],
     )
     return manifest
+
+
+def _format_ai_audit_lines(ai_audit: dict[str, object] | None) -> list[str]:
+    if not ai_audit:
+        return []
+    return [
+        "AI Verification Audit:",
+        f"- Verified evidence: {ai_audit.get('verified_evidence_count', 0)}",
+        f"- Rejected evidence: {ai_audit.get('rejected_evidence_count', 0)}",
+    ]
 
 
 def _write_simple_pdf(path: Path, *, title: str, lines: list[str]) -> None:

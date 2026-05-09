@@ -1,0 +1,15 @@
+{
+  "verified_quotes": [
+    {
+      "source": "note_2025-08-10.txt",
+      "quote": "Prior auth was approved on 2025-08-10."
+    }
+  ],
+  "known_rejects": [
+    {
+      "source": "note_2025-08-12.txt",
+      "quote": "Authorization approval was documented on 2025-08-12.",
+      "reason": "quote does not appear verbatim in the source note"
+    }
+  ]
+}

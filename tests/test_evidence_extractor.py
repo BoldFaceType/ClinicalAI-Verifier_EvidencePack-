@@ -21,6 +21,13 @@ class FakeInstructorClient:
         )
 
 
+class HallucinatingInstructorClient:
+    def create(self, *args, **kwargs) -> EvidenceExtractionResponse:
+        return EvidenceExtractionResponse(
+            excerpts=["Authorization approval is documented in the chart."]
+        )
+
+
 class EvidenceExtractorTests(unittest.TestCase):
     def test_instructor_path_returns_structured_excerpts(self) -> None:
         notes = [
@@ -43,6 +50,27 @@ class EvidenceExtractorTests(unittest.TestCase):
         )
         self.assertEqual(len(excerpts), 1)
         self.assertEqual(excerpts[0].confidence, 0.95)
+
+    def test_instructor_path_rejects_non_verbatim_ai_excerpts(self) -> None:
+        notes = [
+            ClinicalNote(
+                source="note.txt",
+                text="Authorization was requested, but no approval is present in this note.",
+            )
+        ]
+        plan = EvidencePlan(
+            category="prior_auth_missing",
+            required_documents=["authorization"],
+            search_terms=["authorization", "prior auth"],
+        )
+        excerpts = extract_supporting_evidence(
+            notes,
+            plan,
+            "Missing authorization",
+            use_ai=True,
+            client=HallucinatingInstructorClient(),
+        )
+        self.assertEqual(excerpts, [])
 
     def test_instructor_path_falls_back_to_heuristics(self) -> None:
         notes = [

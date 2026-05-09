@@ -111,6 +111,55 @@ class CliTests(unittest.TestCase):
         finally:
             cleanup_temp_dir(temp_path)
 
+    def test_evidence_cli_accepts_explicit_deterministic_mode(self) -> None:
+        temp_path = make_temp_dir("cli_evidence_mode")
+        try:
+            claim_response_json = temp_path / "claimresponse.json"
+            notes_dir = temp_path / "notes"
+            output_dir = temp_path / "out"
+            notes_dir.mkdir()
+            claim_response_json.write_text(
+                json.dumps(
+                    {
+                        "resourceType": "ClaimResponse",
+                        "outcome": "error",
+                        "disposition": "Authorization missing",
+                        "item": [
+                            {
+                                "adjudication": [
+                                    {
+                                        "reason": {
+                                            "coding": [{"code": "AUTH-001"}],
+                                            "text": "Missing authorization",
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (notes_dir / "note.txt").write_text(
+                "Authorization was approved and documented in the chart.",
+                encoding="utf-8",
+            )
+            stdout = io.StringIO()
+            with redirect_stdout(stdout):
+                exit_code = evidence_main(
+                    [
+                        str(claim_response_json),
+                        str(notes_dir),
+                        str(output_dir),
+                        "--mode",
+                        "deterministic",
+                    ]
+                )
+            self.assertEqual(exit_code, 0)
+            self.assertIn("Appeal packet generated", stdout.getvalue())
+        finally:
+            cleanup_temp_dir(temp_path)
+
     def test_evidence_cli_returns_one_for_no_action(self) -> None:
         temp_path = make_temp_dir("cli_evidence_no_action")
         try:
