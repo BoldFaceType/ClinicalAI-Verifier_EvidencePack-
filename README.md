@@ -237,15 +237,18 @@ EOF
 validate-dsfe smoke_test.csv out/smoke
 ```
 
-### CI pipeline (GitHub Actions)
+### CI/CD pipeline (GitHub Actions)
 
-Three jobs run on every push to `main`:
+Pushes and pull requests to `main` run a common quality gate:
 
 | Job | What it does |
 |-----|-------------|
 | **Lint** | `ruff check` — E, F, I rules |
-| **Test** | `unittest discover` on Python 3.11 and 3.12 |
-| **CLI smoke test** | Installs package, writes minimal DSF-E CSV, runs `validate-dsfe`, asserts all 4 output artefacts exist |
+| **Test** | `unittest discover` on Python 3.11, 3.12, and 3.13 |
+| **CLI smoke test** | Installs package, runs `validate-dsfe`, runs `evidence-packer`, and asserts expected output files exist |
+| **Package build** | Builds source and wheel distributions and uploads them as workflow artifacts |
+
+Tagged releases matching `v*.*.*` build source and wheel distributions and publish them to a GitHub Release. Dependabot checks GitHub Actions and Python package metadata weekly.
 
 ---
 

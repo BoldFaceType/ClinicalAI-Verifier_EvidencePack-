@@ -16,6 +16,11 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `--mode ai-assisted --verify-citations` CLI path and AI verification audit counts in packet output.
 - Optional `ai` and `azure` dependency extras, Azure AI Search adapter, synthetic AI demo data, golden eval fixture, and AI/responsible-AI setup docs.
 
+**CI/CD**
+- Pull request and `main` quality gate with lint, Python 3.11/3.12/3.13 tests, CLI smoke tests, and package build artifacts.
+- Tag-based GitHub Release workflow for `v*.*.*` tags.
+- Dependabot weekly checks for GitHub Actions and Python package metadata.
+
 ### Changed
 
 - AI extraction now excludes non-verbatim model quotes from final appeal evidence.

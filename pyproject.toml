@@ -27,6 +27,10 @@ azure = [
   "azure-search-documents>=11.6,<12",
   "openai>=1.84,<2"
 ]
+dev = [
+  "build>=1.2,<2",
+  "ruff>=0.11,<0.12"
+]
 
 [dependency-groups]
 dev = [
