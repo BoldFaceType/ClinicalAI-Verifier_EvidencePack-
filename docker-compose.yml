@@ -1,0 +1,34 @@
+# ClinicalAI-Verifier â€” one-shot CLI runner
+#
+# Both `validate-dsfe` and `evidence-packer` are short-lived commands, not
+# servers, so this defines a single service and you override `command` per
+# run with `docker compose run --rm`.
+#
+# Validate:
+#   docker compose run --rm clinica validate-dsfe /data/in/dsfe_input.csv /data/out
+#
+# Pack:
+#   docker compose run --rm clinica evidence-packer \
+#     /data/in/claimresponse_denied.json /data/in/clinical_notes /data/out
+#
+# Mounts:
+#   ./examples  -> /data/in   (read-only sample inputs; point elsewhere for real data)
+#   ./out       -> /data/out  (findings, packets, reports)
+#   ./config.toml -> /data/config.toml (optional rule overrides, auto-detected)
+#
+# Setup: this file requires .env to exist (compose errors on a missing
+# env_file). Run `cp .env.example .env` once before first use â€” the
+# variables inside are optional, but the file itself must be present.
+
+services:
+  clinica:
+    build: .
+    image: clinica-ai-engineering
+    env_file:
+      - .env
+    volumes:
+      - ./examples:/data/in:ro
+      - ./out:/data/out
+      - ./config.toml:/data/config.toml:ro
+    working_dir: /data
+    command: ["validate-dsfe", "--help"]
