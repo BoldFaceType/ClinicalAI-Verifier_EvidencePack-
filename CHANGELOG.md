@@ -7,24 +7,25 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [Unreleased]
+## [0.3.0] â€” 2026-06-12
 
 ### Added
 
-**Evidence Packer**
-- AI evidence contracts and deterministic citation verifier for AI-proposed evidence quotes.
-- `--mode ai-assisted --verify-citations` CLI path and AI verification audit counts in packet output.
-- Optional `ai` and `azure` dependency extras, Azure AI Search adapter, synthetic AI demo data, golden eval fixture, and AI/responsible-AI setup docs.
-
-**CI/CD**
-- Pull request and `main` quality gate with lint, Python 3.11/3.12/3.13 tests, CLI smoke tests, and package build artifacts.
-- Tag-based GitHub Release workflow for `v*.*.*` tags.
-- Dependabot weekly checks for GitHub Actions and Python package metadata.
+**Deploy / Install / Config**
+- `Makefile` â€” `install`, `lint`, `test`, `validate`, `pack`, `clean` targets
+- `Dockerfile` â€” single-stage `python:3.11-slim` runtime image for both CLIs
+- `docker-compose.yml` â€” one-shot `clinica` service for `validate-dsfe` / `evidence-packer` via `docker compose run`
+- `.env.example` â€” documents optional `OPENAI_API_KEY` and `CLINICAL_AI_CONFIG`
+- `config.toml` â€” optional DSF-E rule overrides (LOINC sets, score thresholds, follow-up codes/window)
+- `src/preflight_validator/config.py` â€” `config.toml` loader; gracefully no-ops if file or `tomllib` is absent
+- README: new "Deployment & Configuration" section covering Makefile, Docker, compose, `.env`, and `config.toml`
 
 ### Changed
 
-- AI extraction now excludes non-verbatim model quotes from final appeal evidence.
-- Optional OpenAI client loading no longer depends on `instructor`.
+- `schemas/dsfe.py`: rule constants (`APPROVED_LOINC_BY_TOOL`, `THRESHOLDS`, `FOLLOW_UP_CODES`, `FOLLOW_UP_WINDOW_DAYS`) renamed to `_DEFAULT_*` and passed through `apply_overrides()` at import time â€” purely additive, no signature changes downstream
+- `rules/engine.py`: `FR5_FOLLOW_UP_OUTSIDE_WINDOW` now uses configurable `FOLLOW_UP_WINDOW_DAYS` instead of a hardcoded `30`
+- `.gitignore`: added `.env` and `out/`
+- `pyproject.toml`: version bumped to `0.3.0`
 
 ---
 
@@ -92,5 +93,6 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+[0.3.0]: https://github.com/BoldFaceType/ClinicalAI-Verifier_EvidencePack-/releases/tag/v0.3.0
 [0.2.0]: https://github.com/BoldFaceType/ClinicalAI-Verifier_EvidencePack-/releases/tag/v0.2.0
 [0.1.0]: https://github.com/BoldFaceType/ClinicalAI-Verifier_EvidencePack-/releases/tag/v0.1.0
