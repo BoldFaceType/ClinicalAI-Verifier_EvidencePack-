@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "clinica-ai-engineering"
-version = "0.2.0"
+version = "0.3.0"
 description = "Clinical AI data tools: DSF-E pre-flight validator and denial evidence packer."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -18,18 +18,6 @@ dependencies = [
 [project.optional-dependencies]
 parquet = [
   "pyarrow>=15,<18"
-]
-ai = [
-  "openai>=1.84,<2"
-]
-azure = [
-  "azure-identity>=1.16,<2",
-  "azure-search-documents>=11.6,<12",
-  "openai>=1.84,<2"
-]
-dev = [
-  "build>=1.2,<2",
-  "ruff>=0.11,<0.12"
 ]
 
 [dependency-groups]
