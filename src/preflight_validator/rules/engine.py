@@ -31,7 +31,8 @@ Stage 5  - follow_up_validation
   FR5_INVALID_FOLLOW_UP_DATE          ERROR  follow_up_date not YYYY-MM-DD
   FR5_INVALID_SCREENING_DATE          ERROR  screening_date not parseable when follow-up present
   FR5_FOLLOW_UP_BEFORE_SCREENING      ERROR  follow_up_date < screening_date
-  FR5_FOLLOW_UP_OUTSIDE_WINDOW        ERROR  follow-up > 30 days after screening
+  FR5_FOLLOW_UP_OUTSIDE_WINDOW        ERROR  follow-up > FOLLOW_UP_WINDOW_DAYS after screening
+                                              (default 30; configurable via config.toml)
 
 Stage 6  - exclusion_validation
   FR6_INVALID_BIPOLAR_HISTORY_FLAG       ERROR  bipolar_history not boolean-like
@@ -52,6 +53,7 @@ from preflight_validator.schemas.dsfe import (
     BOOLEAN_FALSE,
     BOOLEAN_TRUE,
     FOLLOW_UP_CODES,
+    FOLLOW_UP_WINDOW_DAYS,
     LOINC_TO_TOOL,
     MEASURE_ID,
     REQUIRED_FIELDS,
@@ -192,10 +194,10 @@ def _follow_up_validation(record: DsfeRecord) -> Iterable[RuleResult]:
                       f"follow_up_date ({record.follow_up_date}) is before "
                       f"screening_date ({record.screening_date}).",
                       "follow_up_validation")
-    elif follow_up_date and (follow_up_date - screening_date).days > 30:
+    elif follow_up_date and (follow_up_date - screening_date).days > FOLLOW_UP_WINDOW_DAYS:
         delta = (follow_up_date - screening_date).days
         yield _result(record, "FR5_FOLLOW_UP_OUTSIDE_WINDOW", "follow_up_date",
-                      f"Follow-up must be within 30 days. Gap was {delta} days.",
+                      f"Follow-up must be within {FOLLOW_UP_WINDOW_DAYS} days. Gap was {delta} days.",
                       "follow_up_validation")
 
 
