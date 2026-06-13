@@ -1,0 +1,36 @@
+# ClinicalAI-Verifier configuration
+#
+# This file overrides the DSF-E validation rule defaults baked into
+# src/preflight_validator/schemas/dsfe.py. Delete this file (or any
+# section/key within it) to fall back to the built-in defaults shown
+# in each comment below.
+#
+# To use a config file at a non-default location, set:
+#   CLINICAL_AI_CONFIG=/path/to/config.toml
+#
+# Default search order: $CLINICAL_AI_CONFIG, then ./config.toml (cwd).
+# If neither exists, built-in defaults are used and this file is optional.
+
+[dsfe]
+
+# Approved CPT/HCPCS follow-up codes.
+# Default: ["96127", "G8431", "G8510", "99484"]
+follow_up_codes = ["96127", "G8431", "G8510", "99484"]
+
+# Maximum allowed days between screening_date and follow_up_date.
+# Default: 30
+follow_up_window_days = 30
+
+# Approved LOINC codes per screening tool.
+# Default:
+#   PHQ-2 = ["44249-1"]
+#   PHQ-9 = ["44261-6"]
+[dsfe.approved_loinc_by_tool]
+PHQ-2 = ["44249-1"]
+PHQ-9 = ["44261-6"]
+
+# Positive-screen thresholds per tool (score >= threshold requires follow-up).
+# Default: { PHQ-2 = 3, PHQ-9 = 10 }
+[dsfe.thresholds]
+PHQ-2 = 3
+PHQ-9 = 10
