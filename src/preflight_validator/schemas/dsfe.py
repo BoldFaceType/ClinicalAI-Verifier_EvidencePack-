@@ -9,6 +9,7 @@ except ImportError:
     ConfigDict = None
     field_validator = None
 
+from preflight_validator.config import apply_overrides
 
 REQUIRED_FIELDS = (
     "member_id",
@@ -30,20 +31,35 @@ ALL_FIELDS = REQUIRED_FIELDS + (
 
 MEASURE_ID = "DSF-E"
 
-APPROVED_LOINC_BY_TOOL: dict[str, set[str]] = {
+_DEFAULT_APPROVED_LOINC_BY_TOOL: dict[str, set[str]] = {
     "PHQ-2": {"44249-1"},
     "PHQ-9": {"44261-6"},
 }
+_DEFAULT_THRESHOLDS = {"PHQ-2": 3, "PHQ-9": 10}
+_DEFAULT_FOLLOW_UP_CODES = {"96127", "G8431", "G8510", "99484"}
+_DEFAULT_FOLLOW_UP_WINDOW_DAYS = 30
 
-# Reverse map: LOINC code → screening tool name
+# Apply optional config.toml overrides (see preflight_validator.config).
+# If no config file is present, these are unchanged from the defaults above.
+(
+    APPROVED_LOINC_BY_TOOL,
+    THRESHOLDS,
+    FOLLOW_UP_CODES,
+    FOLLOW_UP_WINDOW_DAYS,
+) = apply_overrides(
+    approved_loinc_by_tool=_DEFAULT_APPROVED_LOINC_BY_TOOL,
+    thresholds=_DEFAULT_THRESHOLDS,
+    follow_up_codes=_DEFAULT_FOLLOW_UP_CODES,
+    follow_up_window_days=_DEFAULT_FOLLOW_UP_WINDOW_DAYS,
+)
+
+# Reverse map: LOINC code â†’ screening tool name
 LOINC_TO_TOOL: dict[str, str] = {
     loinc: tool
     for tool, loincs in APPROVED_LOINC_BY_TOOL.items()
     for loinc in loincs
 }
 
-FOLLOW_UP_CODES = {"96127", "G8431", "G8510", "99484"}
-THRESHOLDS = {"PHQ-2": 3, "PHQ-9": 10}
 BOOLEAN_TRUE = {"1", "true", "yes", "y"}
 BOOLEAN_FALSE = {"0", "false", "no", "n"}
 VALID_SOURCE_KINDS: frozenset[str] = frozenset({"structured"})
