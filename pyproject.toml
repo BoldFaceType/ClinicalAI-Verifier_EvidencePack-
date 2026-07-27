@@ -22,7 +22,7 @@ parquet = [
 
 [dependency-groups]
 dev = [
-  "ruff>=0.11,<0.12"
+  "ruff>=0.11,<0.17"
 ]
 
 [project.scripts]
